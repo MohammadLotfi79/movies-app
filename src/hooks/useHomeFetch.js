@@ -3,6 +3,9 @@ import React, { useState, useEffect } from "react";
 /// API
 import API from "../API";
 
+// helpers
+import { isPersistedState } from "../helpers";
+
 const initialState = {
   page: 0,
   results: [],
@@ -16,8 +19,6 @@ export const useHomeFetch = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-
-  console.log(searchTerm);
 
   const fetchMovies = async (page, searchTerm = "") => {
     try {
@@ -38,6 +39,15 @@ export const useHomeFetch = () => {
   };
 
   useEffect(() => {
+    if (!searchTerm) {
+      const sessionState = isPersistedState('homeState');
+
+      if (sessionState) {
+        setState(sessionState);
+        return;
+      }
+    }
+
     setState(initialState)
     fetchMovies(1, searchTerm);
   }, [searchTerm]);
@@ -49,6 +59,11 @@ export const useHomeFetch = () => {
     fetchMovies(state.page + 1, searchTerm);
     setIsLoadingMore(false);
   }, [isLoadingMore, searchTerm, state.page])
+
+  // Write to session storage
+  useEffect(() => {
+    if (!searchTerm) sessionStorage.setItem("homeState", JSON.stringify(state))
+  }, [searchTerm, state])
 
   return { state, loading, error, searchTerm, setSearchTerm, setIsLoadingMore };
 };
